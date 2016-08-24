@@ -83,6 +83,10 @@ for splitcats in [x for x in os.listdir(ras_dir) if x.count('.tif') and
 
 # This can also be performed using gdal in the following fashion:
 #>>gdal_polygonize wsALLS-1038.tif -f "ESRI Shapefile" ALLS-1038.shp "" "UID"
+# this can be used with the script in this repo OGRfieldUpdate.py to format
+# shapefiles to then append to selected NHD catchments. Geopandas has an update
+# which will be including a dissolve function, but is not officially released
+# currently.
 
 ################################################################################
 
