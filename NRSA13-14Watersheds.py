@@ -124,8 +124,7 @@ for coms in nrsa_sites['CAT_COMID']:
 #Process
 ################################################################################
     
-    
-count = 0 
+
 for vpu in vpu_com.keys():
     print vpu    
     hr = sites_vpu.loc[sites_vpu['UnitID'] == vpu,'DrainageID'].values[0]
@@ -137,7 +136,7 @@ for vpu in vpu_com.keys():
                 catQuery = '"FEATUREID" IN %s' % feat 
             if len(UpComs[com]) > 1:
                 catQuery = '"FEATUREID" IN ' + str(tuple(UpComs[com]))    
-            catchments = arcpy.MakeFeatureLayer_management(NHD_dir + '/NHDPlus' + hr +  '/NHDPlus' + vpu + '/NHDPlusCatchment/Catchment.shp','catchments', catQuery)
+            catchments = arcpy.MakeFeatureLayer_management('%s/NHDPlus%s/NHDPlus%s/NHDPlusCatchment/Catchment.shp' % (NHD_dir, hr, vpu),'catchments', catQuery)
             sites =  nrsa_sites.loc[nrsa_sites['CAT_COMID']==com, 'SITE_ID'].values
             for site in sites:
                 sitef = site.replace('-','_').lower()
@@ -148,7 +147,7 @@ for vpu in vpu_com.keys():
                         for upCom in connectors_dict[com]:
                             upPoly = arcpy.MakeFeatureLayer_management('%s/%s.shp' % (upStream_dir, upCom))
                             arcpy.Append_management(upPoly, localcat)
-                    arcpy.Dissolve_management(localcat, '%s/%s.shp' % (out, sitef), "MERGE")
+                    arcpy.Dissolve_management(localcat, '%s/%s.shp' % (out, sitef))
                     arcpy.Delete_management(localcat)
             arcpy.Delete_management(catchments)
         if len(UpComs[com]) == 0:
@@ -157,8 +156,6 @@ for vpu in vpu_com.keys():
                 site = site.replace('-','_').lower()
                 if not arcpy.Exists('%s/%s.shp' % (out, site)):
                     arcpy.Copy_management('%s/ws%s.shp' % (splits, site), '%s/%s.shp' % (out, site))                
-                
-                
 ###############################################################################################
 # Below is the sandbox we were trying to make watersheds using geopandas                 
 #for vpu in vpu_com.keys():
