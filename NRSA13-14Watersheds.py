@@ -81,6 +81,9 @@ for splitcats in [x for x in os.listdir(ras_dir) if x.count('.tif') and
             arcpy.AddField_management(outshape, "AreaSqKM", "DOUBLE", 19)
             arcpy.DeleteField_management(outshape, "ID")
 
+# This can also be performed using gdal in the following fashion:
+#>>gdal_polygonize wsALLS-1038.tif -f "ESRI Shapefile" ALLS-1038.shp "" "UID"
+
 ################################################################################
 
 
