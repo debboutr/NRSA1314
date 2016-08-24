@@ -45,7 +45,8 @@ intervpu_tbl = pd.read_csv("%s/SSWR1.1B/InterVPUtable/InterVPU.csv" % L_drive)
 # this csv was built by reading in the dbf from the NRSA sites shapefile and 
 # then writing out as csv,
 csv = 'StreamCat/NRSA13-14LandscapeRasters/NRSA1314_Sites_VPU.csv' 
-sites_vpu = pd.read_csv('%s/%s' % (L_drive, csv))[['SITE_','DrainageID','UnitType','UnitID']]
+sites_vpu = pd.read_csv('%s/%s' % (
+                L_drive, csv))[['SITE_','DrainageID','UnitType','UnitID']]
 # the shapefile had already been spatially joined with the global BoundaryUnits
 # so we can do watersheds by VPU
 sites_vpu = sites_vpu[sites_vpu['UnitType']=='VPU']
@@ -59,7 +60,9 @@ sites_vpu = pd.merge(sites_vpu, nrsa_sites, left_on='SITE_', right_on='SITE_ID')
 ras_dir = 'D:/Projects/chkNRSA_Watersheds/Watersheds_08_16'
 splits = 'D:/Projects/splitSample'
 upStream_dir = '%s/SSWR1.1B/InterVPUtable' % L_drive
-out = 'D:/Projects/NRSA13-14 Watersheds'
+out = 'D:/Projects/WsTEST'
+cat =  'NHDPlusCatchment/Catchment.shp'
+dict_store = 'C:/Users/Rdebbout/Desktop'
 
 # Create split catchment shapefiles
 for splitcats in [x for x in os.listdir(ras_dir) if x.count('.tif') and 
@@ -103,10 +106,10 @@ connectors_dict = {k:v for k,v in connectors_dict.items() if v}
 
 # Dictionaries were saved when testing, due to long creation times
 
-#np.save('C:/Users/Rdebbout/Desktop/UpComs.npy', UpComs)       
-#UpComs = np.load('C:/Users/Rdebbout/Desktop/UpComs.npy').item()
-#np.save('C:/Users/Rdebbout/Desktop/connectors_dict.npy', connectors_dict)
-#connectors_dict = np.load('C:/Users/Rdebbout/Desktop/connectors_dict.npy').item()
+#np.save('%s/UpComs.npy' % dict_store, UpComs)       
+#UpComs = np.load('%s/UpComs.npy' % dict_store).item()
+#np.save('%s/connectors_dict.npy' % dict_store, connectors_dict)
+#connectors_dict = np.load('%s/connectors_dict.npy' % dict_store).item()
 
 ################################################################################
 
@@ -136,26 +139,32 @@ for vpu in vpu_com.keys():
                 catQuery = '"FEATUREID" IN %s' % feat 
             if len(UpComs[com]) > 1:
                 catQuery = '"FEATUREID" IN ' + str(tuple(UpComs[com]))    
-            catchments = arcpy.MakeFeatureLayer_management('%s/NHDPlus%s/NHDPlus%s/NHDPlusCatchment/Catchment.shp' % (NHD_dir, hr, vpu),'catchments', catQuery)
-            sites =  nrsa_sites.loc[nrsa_sites['CAT_COMID']==com, 'SITE_ID'].values
+            catchments = arcpy.MakeFeatureLayer_management(
+                '%s/NHDPlus%s/NHDPlus%s/%s' % (NHD_dir, hr, vpu, cat),
+                'catchments', catQuery)
+            sites = nrsa_sites.loc[nrsa_sites['CAT_COMID']==com,'SITE_ID'].values
             for site in sites:
                 sitef = site.replace('-','_').lower()
                 if not arcpy.Exists('%s/%s.shp' % (out, sitef)):
-                    localcat = arcpy.MakeFeatureLayer_management('%s/ws%s.shp' % (out, sitef))
+                    localcat = arcpy.MakeFeatureLayer_management(
+                    '%s/ws%s.shp' % (splits, sitef))
                     arcpy.Append_management(catchments, localcat)
                     if com in connectors_dict.keys():
                         for upCom in connectors_dict[com]:
-                            upPoly = arcpy.MakeFeatureLayer_management('%s/%s.shp' % (upStream_dir, upCom))
+                            upPoly = arcpy.MakeFeatureLayer_management(
+                            '%s/%s.shp' % (upStream_dir, upCom))
                             arcpy.Append_management(upPoly, localcat)
-                    arcpy.Dissolve_management(localcat, '%s/%s.shp' % (out, sitef))
+                    arcpy.Dissolve_management(localcat,
+                                              '%s/%s.shp' % (out, sitef))
                     arcpy.Delete_management(localcat)
             arcpy.Delete_management(catchments)
         if len(UpComs[com]) == 0:
-            sites =  nrsa_sites.loc[nrsa_sites['CAT_COMID']==com, 'SITE_ID'].values
+            sites = nrsa_sites.loc[nrsa_sites['CAT_COMID']==com,'SITE_ID'].values
             for site in sites:
                 site = site.replace('-','_').lower()
                 if not arcpy.Exists('%s/%s.shp' % (out, site)):
-                    arcpy.Copy_management('%s/ws%s.shp' % (splits, site), '%s/%s.shp' % (out, site))                
+                    arcpy.Copy_management('%s/ws%s.shp' % (splits, site), 
+                    '%s/%s.shp' % (out, site))                
 ###############################################################################################
 # Below is the sandbox we were trying to make watersheds using geopandas                 
 #for vpu in vpu_com.keys():

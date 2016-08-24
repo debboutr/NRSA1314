@@ -2,6 +2,13 @@
 """
 Created on Thu Jun 23 11:49:24 2016
 
+This script will use the tifs that are generated with the georasters package
+below to loop through and perform zonal statistics or tabulate area on each tif
+in the given directory that they are made. The output dbfs are then stacked to 
+make a single table containing data for each split-catchment that can then be 
+appended with StreamCat data to calculate site-specific watershed output written 
+out at the end of the script.
+
 @author: Rdebbout
 """
 import sys
@@ -12,8 +19,9 @@ import pandas as pd
 import georasters as gr 
 import geopandas as gpd
 from geopandas.tools import sjoin
-#ctl = pd.read_csv('L:/Priv/CORFiles/Geospatial_Library/Data/Project/SSWR1.1B/ControlTables/ControlTable_NRSA_RD.csv') #
-ctl = pd.read_csv(sys.argv[1]) #'L:/Priv/CORFiles/Geospatial_Library/Data/Project/SSWR1.1B/ControlTables/ControlTable_NRSA_RD.csv'
+#ctl = pd.read_csv('L:/Priv/CORFiles/Geospatial_Library/Data/Project/SSWR1.1B/\
+#ControlTables/ControlTable_NRSA_RD.csv') #
+ctl = pd.read_csv(sys.argv[1])
 sys.path.append('D:/Projects/StreamCat')
 from StreamCat_functions import dbf2DF, chkColumnLength
 arcpy.CheckOutExtension("spatial")
@@ -25,13 +33,21 @@ ingrid_dir = ctl.DirectoryLocations.values[1]
 out_dir = ctl.DirectoryLocations.values[2]  
 NHD_dir = ctl.DirectoryLocations.values[4]
 upDir = ctl.DirectoryLocations.values[5]
-#########################################################################################
-##convert to tifs from the GRIDs that are made with the SplitCatchments).py script
-#home = 'L:/Priv/CORFiles/Geospatial_Library/Data/Project/StreamCat/NRSA13-14Watersheds'
+################################################################################
+
+
+## convert to tifs from the GRIDs that are made with the SplitCatchments0.py 
+## script, these tifs will then be used in the zonal stats function for each 
+## Landscape layer, this does not use the control table, but needs to be done 
+## before this script will work
+
+#home = 'L:/Priv/CORFiles/Geospatial_Library/Data/Project/\
+#        StreamCat/NRSA13-14Watersheds'
+#tifs = 'D:/Projects/chkNRSA_Watersheds/Watersheds_08_16'
 #uid = pd.read_csv('D:/Projects/chkNRSA_Watersheds/sitesUID.csv')
 #for index, row in uid.iterrows():
 #    wsID = 'ws' + row['SITE_ID']
-#    if not os.path.exists('D:/Projects/chkNRSA_Watersheds/Watersheds_08_16/' + wsID):
+#    if not os.path.exists('%s/%s' % (tifs, wsID):
 #        print wsID
 #        comid = row['UID']
 #        print comid
@@ -39,8 +55,9 @@ upDir = ctl.DirectoryLocations.values[5]
 #        r.datatype=4
 ##        r.nodata_value = 4294967295.0  works for some but not all....
 #        r = r*comid
-#        r.to_tiff('D:/Projects/chkNRSA_Watersheds/Watersheds_08_16/' + wsID)
-#########################################################################################
+#        r.to_tiff('%s/%s' %s (tifs, wsID))
+
+################################################################################
 for line in range(len(ctl.values)):
     if ctl.run[line] == 1:
         count = 0
@@ -49,16 +66,19 @@ for line in range(len(ctl.values)):
         inputs = np.load('%s/StreamCat_npy/zoneInputs.npy' % NHD_dir).item()
         join = pd.read_csv('D:/Projects/chkNRSA_Watersheds/sitesUID.csv')
         if ctl.ByRPU[line] == 1:
-            zones = gpd.GeoDataFrame.from_file('D:/NHDPlusV21/NHDPlusGlobalData/BoundaryUnit.shp')
+#           if using rpus, this will be used to isolate which rpu the pt exists            
+            zones = gpd.GeoDataFrame.from_file('%s/NHDPlusGlobalData/BoundaryUnit.shp' % NHD_dir)
             zones = zones.ix[zones.UnitType == 'RPU']
             rpuinputs = np.load('%s/StreamCat_npy/rpuInputs.npy' % NHD_dir).item()
-            pts  = gpd.GeoDataFrame.from_file('D:/Projects/chkNRSA_Watersheds/NRSA13_14_SiteData.shp')            
+            pts  = gpd.GeoDataFrame.from_file('D:/Projects/chkNRSA_Watersheds/NRSA13_14_SiteData.shp')
+#       loop through all rasters and create statistics individually, hold in 
+#       final DataFrame similar to Catchment Statistics in StreamCat
         for f in os.listdir(WsRasterPath):
             if '.tif' in f and not '.vat' in f and not '.xml' in f and not '.ovr' in f:  #USED WITH RASTERS!
                 inZoneData = '%s/%s' % (WsRasterPath, f)
                 uid = f.split('.')[0][2:]
                 conversion = float(ctl.Conversion[line])
-                outTables = {} # this was established for multiple rpus, not needed anymore, but won't hold anything up
+                outTables = {} # this was established for multiple rpus, Elevation
                 if ctl.ByRPU[line] == 1:                                      
                     pt = pts.ix[pts.SITE_ == uid]
                     joined = sjoin(pt, zones)                    
@@ -94,6 +114,7 @@ for line in range(len(ctl.values)):
                     'COUNT' : sum(t.COUNT), 'MAX' : t.MAX.max(), 'MIN' : t.MIN.min()}, index=[0])
                 if len(outTables) == 1:
                     tbl = dbf2DF(outTable)
+#               find the full area of the split-cat to use for pct_full
                 ras = gr.from_file(inZoneData)
                 AreaSqKM = (ras.count() * 900) * 1e-6
                 if accum_type == 'Categorical':
@@ -117,7 +138,8 @@ for line in range(len(ctl.values)):
                         cols = tbl.columns.tolist()[1:]
                         tbl.columns = ['UID'] + ['Cat' + y[0] + y[1:].lower() for y in cols]  #.lower() to match names with StreamCat
                 if np.isnan(tbl['UID'][0]):
-                    tbl['UID'] = join.ix[join.SITE_ID == uid].UID.values[0]  # retain UID if there was no coverage
+                    # retain UID if there was no coverage
+                    tbl['UID'] = join.ix[join.SITE_ID == uid].UID.values[0]  
                 #stack to complete table and add pct full with areas
                 if count == 0:
                     final = tbl.copy()
@@ -126,6 +148,7 @@ for line in range(len(ctl.values)):
                 count += 1
         final['CatPctFull'] = final['CatPctFull'].fillna(0)
         final = pd.merge(join, final, on='UID')
+        # Gather Streamcat 'UpCat' data and then do the math for WS statistics
         for zone in inputs:
             add = pd.read_csv('%s/%s_%s.csv' %(upDir, ctl.FullTableName[line], zone))
             add = add.ix[add.COMID.isin(final.CAT_COMID)]

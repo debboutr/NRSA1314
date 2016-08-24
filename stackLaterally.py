@@ -2,6 +2,10 @@
 """
 Created on Thu Aug 18 11:23:08 2016
 
+Use this script to take all of the output csv's from the getUninitialized.py and
+splitCat_Zstats_SITES.py scripts to couple them together and horizintally stack 
+the watershed statistics for a final table of continuous and categorical metrics
+
 @author: Rdebbout
 """
 import os

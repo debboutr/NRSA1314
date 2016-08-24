@@ -2,6 +2,9 @@
 """
 Created on Wed May 18 15:58:53 2016
 
+Using NHD and output from SplitCatchments0.py to create images that can quickly 
+be viewed to isolate problem sites that may need to be dealt with by hand.
+
 @author: Rdebbout
 """
 
