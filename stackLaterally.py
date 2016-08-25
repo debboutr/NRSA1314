@@ -18,8 +18,8 @@ for csv in os.listdir('D:/Projects/chkNRSA_Watersheds/Output_08_16'):
         print csv
         tbl = pd.read_csv('D:/Projects/chkNRSA_Watersheds/Output_08_16/%s' % csv)        
         tbl2 = pd.read_csv('D:/Projects/chkNRSA_Watersheds/Uninit/%s' % csv)
+#       the next 3 lines compensated for the capitalization of COUNT an SUM        
         cols = tbl2.columns.tolist()
-
         tbl.columns = [c.upper() for c in tbl.columns]
         tbl2.columns = [c.upper() for c in tbl2.columns]
         tbl3 = pd.concat([tbl,tbl2])
@@ -238,3 +238,8 @@ for f in os.listdir('D:/Projects/NRSA13-14 Watersheds/workSHPS'):
         count += 1
 place = 'L:/Priv/CORFiles/Geospatial_Library/Data/RESOURCE/PHYSICAL/WATERSHEDS/NRSA13-14/NRSA13-14_IndividualWatersheds.gdb'        
 arcpy.ListFeatureClasses(place)
+# these were added after releasing the final table and were appended onto final
+# table from the csv created below
+ff = tbl3[['SITE_ID','PMIN_WS', 'PMIN_WS_PctFull']]
+final = pd.merge(f, ff, on='SITE_ID')
+final.to_csv('D:/Projects/chkNRSA_Watersheds/PMINMAX.csv', index=False)

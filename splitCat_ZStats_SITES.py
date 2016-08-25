@@ -131,12 +131,12 @@ for line in range(len(ctl.values)):
                     tbl['PctFull'] = ((tbl.COUNT / ras.count()) * 100)
                     if ctl.ByRPU[line] == 1:                        
                         tbl = tbl[['VALUE', 'AreaSqKm', 'COUNT', 'SUM', 'MAX', 'MIN', 'PctFull']]
-                        cols = tbl.columns.tolist()[1:]
-                        tbl.columns = ['UID'] +['Cat' + y[0] + y[1:].lower() for y in cols]  #.lower() to match names with StreamCat
+                        cols = ['Cat' + y[0] + y[1:].lower() for y in tbl.columns.tolist()[2:-1]]
+                        tbl.columns = ['UID', 'CatAreaSqKm'] + cols + ['CatPctFull'] #.lower() to match names with StreamCat
                     if ctl.ByRPU[line] == 0:
                         tbl = tbl[['VALUE','AreaSqKm','COUNT','SUM','PctFull']]
-                        cols = tbl.columns.tolist()[1:]
-                        tbl.columns = ['UID'] + ['Cat' + y[0] + y[1:].lower() for y in cols]  #.lower() to match names with StreamCat
+                        cols = ['Cat' + y[0] + y[1:].lower() for y in tbl.columns.tolist()[2:-1]]
+                        tbl.columns = ['UID', 'CatAreaSqKm'] + cols + ['CatPctFull']  #.lower() to match names with StreamCat
                 if np.isnan(tbl['UID'][0]):
                     # retain UID if there was no coverage
                     tbl['UID'] = join.ix[join.SITE_ID == uid].UID.values[0]  
@@ -165,11 +165,11 @@ for line in range(len(ctl.values)):
         r = r.drop('COMID',axis=1)
         r['WsAreaSqKm'] = r.CatAreaSqKm + r.UpCatAreaSqKm.fillna(0)
         if accum_type == 'Continuous':
-            r['WsCount'] = r.CatCOUNT.fillna(0) + r.UpCatCount.fillna(0)
-            r['WsSum'] = r.CatSUM.fillna(0) + r.UpCatSum.fillna(0)
+            r['WsCount'] = r.CatCount.fillna(0) + r.UpCatCount.fillna(0)
+            r['WsSum'] = r.CatSum.fillna(0) + r.UpCatSum.fillna(0)
             if ctl.ByRPU[line] == 1:
-                r['WsMAX']= r.ix[:,['CatMAX','UpCatMAX']].max(axis=1)
-                r['WsMIN']= r.ix[:,['CatMIN','UpCatMIN']].min(axis=1)
+                r['WsMAX']= r.ix[:,['CatMax','UpCatMax']].max(axis=1)
+                r['WsMin']= r.ix[:,['CatMin','UpCatMin']].min(axis=1)
             r['UpCatAreaSqKm'] = r['UpCatAreaSqKm'].fillna(0)
             r['UpCatPctFull'] = r['UpCatPctFull'].fillna(0)
             r['WsPctFull'] = ((r['CatAreaSqKm'] *  r['CatPctFull']) + (r['UpCatAreaSqKm'] *  r['UpCatPctFull'])) /  (r['CatAreaSqKm'] +  r['UpCatAreaSqKm'])
@@ -179,7 +179,7 @@ for line in range(len(ctl.values)):
             r[metricName.upper() + '_WS'] = (r['WsSum'] / r['WsCount']) / conversion
             if ctl.ByRPU[line] == 1:
                 r['ELEV_WS_MAX']= r.ix[:,['CatMAX','UpCatMAX']].max(axis=1) / conversion
-                r['ELEV_WS_MIN']= r.ix[:,['CatMIN','UpCatMIN']].min(axis=1) / conversion
+                r['ELEV_WS_Min']= r.ix[:,['CatMin','UpCatMin']].min(axis=1) / conversion
             r[metricName.upper() + '_WS_PctFull'] = r['WsPctFull']
         if accum_type == 'Categorical':
             lookup = pd.read_csv(ctl.MetricName[line])
